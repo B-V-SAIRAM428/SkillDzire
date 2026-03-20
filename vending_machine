@@ -1,0 +1,81 @@
+module vending_machine (
+        input clk,
+        input rst,
+        input [4:0]money,           // money given
+        output reg vending_out      // output vending machine
+        );
+        
+        reg [2:0] count; // used at s20 state to stay for 4 secs and after that go to s0 state
+        
+        // localparameter used bcz it will help to not override the things
+        localparam s0 = 3'b000;    // reset state
+        localparam s5 = 3'b001;    // 5rs state
+        localparam s10 = 3'b010;    // 10rs state 
+        localparam s15 = 3'b011;    // 15rs state
+        localparam s20 = 3'b100;    // 20rs state
+        
+        reg [2:0] ps, ns;      // present_state and next_state
+        
+        always@(posedge clk or posedge rst) begin
+            if(rst) begin
+                count <= 0; 
+                ps <= s0;
+            end else begin
+                ps <= ns; 
+                if(ps == s20) begin
+                    if (count == 3'd5)
+                        count <= 0;
+                    else
+                        count <= count + 1;
+                end
+            end  
+        end   
+         
+        always@(*) begin 
+            case(ps)
+                s0: begin
+                    case(money)
+                        5'd5: ns = s5;
+                        5'd10: ns = s10;
+                        5'd20: ns = s20;
+                        default : ns = s0;
+                    endcase
+                end
+                s5: begin
+                    case(money)
+                        5'd5: ns = s10;
+                        5'd10: ns = s15;
+                        default : ns = s5;
+                    endcase
+                end
+                s10: begin
+                    case(money)
+                        5'd5: ns = s15;
+                        5'd10: ns = s20;
+                        default : ns = s10;
+                    endcase
+                end
+                s15: begin
+                    case(money)
+                        5'd5: ns = s20;
+                        default : ns = s15;
+                    endcase
+                end
+                s20: begin
+                    if(count == 3'd5) 
+                        ns = s0;
+                    else
+                        ns = s20;
+                    
+                end
+                default : ns = s0;
+           endcase  
+        end
+        
+        always@(posedge clk or posedge rst) begin
+            if (rst) 
+                vending_out <= 0;
+            else
+                vending_out <= (ps == s20);
+        end
+endmodule
